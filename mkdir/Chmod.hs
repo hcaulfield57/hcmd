@@ -35,6 +35,7 @@ chmod file mode
                 '3' -> unionFileModes ownerWriteMode ownerExecuteMode
                 '2' -> ownerWriteMode
                 '1' -> ownerExecuteMode
+                '0' -> nullFileMode
             groupmode = case group of
                 '7' -> groupModes
                 '6' -> unionFileModes groupReadMode groupWriteMode
@@ -43,6 +44,7 @@ chmod file mode
                 '3' -> unionFileModes groupWriteMode groupExecuteMode
                 '2' -> groupWriteMode
                 '1' -> groupExecuteMode
+                '0' -> nullFileMode
             othermode = case other of
                 '7' -> otherModes
                 '6' -> unionFileModes otherReadMode otherWriteMode
@@ -51,6 +53,7 @@ chmod file mode
                 '3' -> unionFileModes otherWriteMode otherExecuteMode
                 '2' -> otherWriteMode
                 '1' -> otherExecuteMode
+                '0' -> nullFileMode
             filemode = unionFileModes usermode (unionFileModes 
                 groupmode othermode)
         ret <- try (setFileMode file filemode) :: IO (Either IOError ())
