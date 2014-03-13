@@ -10,5 +10,5 @@ main = do
     argv <- getArgs
     case null argv of
         True -> cat stdin
-        False -> mapM_ (openFile' >=> cat) argv
-    where openFile' fp = openFile fp ReadMode
+        False -> mapM_ ((openFile' ReadMode) >=> cat) argv
+    where openFile' = flip openFile
