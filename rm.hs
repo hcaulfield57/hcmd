@@ -1,73 +1,53 @@
-{- Copyright (C) 2013 Grant Mather <hcaulfield57@gmail.com>
- -
- - Permission to use, copy, modify, and/or distribute this software for any
- - purpose with or without fee is hereby granted, provided that the above 
- - copyright notice and this permission notice appear in all copies.
- -
- - THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- - WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- - MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- - ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- - WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- - ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- - OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- -}
-
+import Control.Monad
+import Control.Monad.Reader
 import System.Console.GetOpt
 import System.Directory
 import System.Environment
 import System.IO
-import System.IO.Error
-import System.Posix.Files
 
-data Flag = Recurse | Force
+data Flag = Force | Recurse
     deriving Eq
 
-options :: [OptDescr Flag]
-options = [ Option "Rr" [] (NoArg Recurse) [],
-            Option "f" [] (NoArg Force) [] ]
+flags :: [OptDescr Flag]
+flags = [Option "f" [] (NoArg Force) [],
+         Option "r" [] (NoArg Recurse) []]
+
+remove :: [String] -> ReaderT [Flag] IO ()
+remove (x:xs) = do
+    isFile <- lift $ doesFileExist x
+    isDir <- lift $ doesDirectoryExist x
+    if isFile 
+        then rm x >> remove xs
+        else if isDir
+             then rmdir x >> remove xs
+             else force x >> remove xs
+remove [] = return ()
+
+rm :: String -> ReaderT [Flag] IO ()
+rm file = lift $ removeFile file
+
+rmdir :: String -> ReaderT [Flag] IO ()
+rmdir dir = do
+    opts <- ask
+    dotdot <- lift $ getDirectoryContents dir
+    let recurse = Recurse `elem` opts
+        base = filter (`notElem` [".",".."]) dotdot
+        contents = map ((dir++"/")++) base
+    if recurse then remove contents >> lift (removeDirectory dir)
+        else lift $ warn (dir ++ " is directory!")
+
+force :: String -> ReaderT [Flag] IO ()
+force path = do
+    opts <- ask
+    let force' = Force `elem` opts
+    unless force' 
+        $ lift $ warn (path ++ " does not exist!")
 
 main :: IO ()
 main = do
     argv <- getArgs
-    let (flags,_,_) = getOpt RequireOrder options argv
-        recurse = any (== Recurse) flags
-        force = any (== Force) flags
-    case recurse of
-        True -> rmdir force (tail argv) 
-        False -> case force of          -- find out if options provided
-            True -> rm force (tail argv)
-            False -> rm force argv
-
-rm :: Bool -> [String] -> IO ()
-rm _ [] = return ()
-rm force (x:xs) = do
-    ret <- try (removeFile x)
-    case ret of
-        Right _ -> rm force xs
-        Left e -> case force of
-            True -> rm force xs
-            False -> warn (show e)
-                >> rm force xs
-
-rmdir :: Bool -> [String] -> IO ()
-rmdir _ [] = return ()
-rmdir force (x:xs) = do
-    isFile <- doesFileExist x
-    isDir <- doesDirectoryExist x
-    case isFile of
-        True -> rm force [x]
-            >> rmdir force xs
-        False -> case isDir of
-            True -> do
-                contents <- getDirectoryContents x >>= return . 
-                    filter (`notElem` [".",".."])
-                rmdir force (map ((x ++ "/") ++) contents) -- does not handle dir/ properly
-                removeDirectory x --should be empty now
-            False -> case force of
-                True -> rmdir force xs
-                False -> warn (x ++ " does not exist!")
-                    >> rmdir force xs
+    case getOpt RequireOrder flags argv of
+        (opts,args,_) -> runReaderT (remove args) opts
 
 warn :: String -> IO ()
-warn w = hPutStrLn stderr w
+warn = hPutStrLn stderr
