@@ -21,7 +21,7 @@ import System.Environment
 import System.Exit
 import System.IO
 
-import Chmod
+import HCmd.Chmod
 
 data Flag = Parents | Mode String
     deriving Eq

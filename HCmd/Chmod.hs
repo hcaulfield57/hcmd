@@ -13,7 +13,7 @@
  - OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  -}
 
-module Chmod where
+module HCmd.Chmod where
 
 import Control.Exception
 import System.Exit
