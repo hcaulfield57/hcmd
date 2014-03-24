@@ -1,3 +1,5 @@
+module Main where
+
 import Control.Monad
 import Control.Monad.Reader
 import System.Console.GetOpt

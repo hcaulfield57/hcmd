@@ -8,11 +8,19 @@ maintainer:          hcaulfield57@gmail.com
 build-type:          Simple
 cabal-version:       >=1.8
 
-executable rm
-    main-is: rm.hs
-    build-depends: base, unix, directory, mtl
+executable echo
+    main-is: echo.hs
+    build-depends: base
 
 executable mkdir
     main-is: mkdir.hs
     other-modules: HCmd.Chmod
     build-depends: base, unix, directory
+
+executable mv
+    main-is: mv.hs
+    build-depends: base, directory
+
+executable rm
+    main-is: rm.hs
+    build-depends: base, unix, directory, mtl

@@ -1,45 +1,26 @@
-{- Copyright (C) 2013 Grant Mather <hcaulfield57@gmail.com>
- -
- - Permission to use, copy, modify, and/or distribute this software for any
- - purpose with or without fee is hereby granted, provided that the above 
- - copyright notice and this permission notice appear in all copies.
- -
- - THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- - WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- - MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- - ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- - WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- - ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- - OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- -}
+module Main where
 
-import System.Console.GetOpt
+import Control.Monad
 import System.Environment
+import System.Exit
 import System.IO
 
-data Flag = NewLine
-    deriving Eq
-
-options :: [OptDescr Flag]
-options = [Option "n" [] (NoArg NewLine) []]
+echo :: Bool -> [String] -> IO ()
+echo newLine args = do
+    echo' args (length args)
+    when newLine (putStrLn "")
+    where echo' (x:_) 1 = putStr x
+          echo' (x:xs) i = putStr (x++" ") 
+            >> echo' xs (i-1)
 
 main :: IO ()
 main = do
     argv <- getArgs
-    let (flags,msg,_) = getOpt RequireOrder options argv
-    case any (== NewLine) flags of
-        True -> echo True msg
-        False -> echo False msg
+    case argv of
+        ("-n":args) -> echo False args
+        (('-':_):args) -> usage
+        _ -> echo True argv
 
-echo :: Bool -> [String] -> IO ()
-echo newline (x:xs)
-    | newline = do
-        putStr x
-        if null xs          -- last msg?
-            then return ()
-            else putChar ' ' >> echo newline xs
-    | otherwise = do
-        putStrLn x
-        if null xs
-            then return ()
-            else putChar ' ' >> echo newline xs
+usage :: IO ()
+usage = hPutStrLn stderr "usage: echo [-n] ..."
+    >> exitWith (ExitFailure 1)
