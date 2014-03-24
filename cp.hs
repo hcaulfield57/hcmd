@@ -26,13 +26,13 @@ copy s@(src:srcs) dst = do
     isDstFile <- lift $ doesFileExist dst
     isSrcDir <- lift $ doesDirectoryExist src
     isDstDir <- lift $ doesDirectoryExist dst
-    when (isSrcFile && (not isDstDir))
+    when isSrcFile
         (if (length (dst:s)) /= 2 then lift (usage [])
             else cp src dst)
     when (isSrcDir && (not isDstFile))
         (if (length (dst:s)) /= 2 then lift (usage [])
             else cpdir src dst)
-    when (isSrcFile && isSrcDir) (cp src dst)
+    when (isSrcFile && isDstDir) (cp src dst)
     copy srcs dst
 
 cp :: String -> String -> ReaderT [Flag] IO ()
