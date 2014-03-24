@@ -26,9 +26,7 @@ copy s@(src:srcs) dst = do
     isDstFile <- lift $ doesFileExist dst
     isSrcDir <- lift $ doesDirectoryExist src
     isDstDir <- lift $ doesDirectoryExist dst
-    when isSrcFile
-        (if (length (dst:s)) /= 2 then lift (usage [])
-            else cp src dst)
+    when isSrcFile (cp src dst)
     when (isSrcDir && (not isDstFile))
         (if (length (dst:s)) /= 2 then lift (usage [])
             else cpdir src dst)
@@ -52,7 +50,8 @@ cpdir src dst = do
     dotdot <- lift $ getDirectoryContents src
     let dst' = if isDstDir then dst ++ "/" ++ src
                else dst
-        contents = filter (`notElem` [".",".."]) dotdot
+        basename = filter (`notElem` [".",".."]) dotdot
+        contents = map ((dst'++"/")++) basename
     lift $ when (Recurse `notElem` opts) (usage [])
     lift $ createDirectoryIfMissing False dst'
     copy contents dst'
