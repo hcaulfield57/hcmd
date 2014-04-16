@@ -1,7 +1,21 @@
-module HCmd.Chmod where
+module HCmd.Chmod (chmod) where
 
+import Data.Functor.Identity (Identity(..))
 import System.Posix.Files
 import System.Posix.Types
+import Text.Parsec.Prim (Parsec, putState)
+import Text.ParserCombinators.Parsec
+
+data User = AllUser | User | Group | Other
+    deriving Eq
+data Action = Equals | Subtract | Add | Null
+    deriving Eq
+data Mode = AllMode | Read | Write | Execute
+    deriving Eq
+
+type Symbolic = ([User],Action,[Mode])
+type SymbolicInfo = (Symbolic,FileMode)
+type SymbolicChMonad = Parsec String SymbolicInfo FileMode
 
 chmod :: String -> FileMode
 chmod (s:u:g:o:[]) =
@@ -43,3 +57,45 @@ chmod (s:u:g:o:[]) =
           '7' -> otherModes
     in unionFileModes system . unionFileModes user 
         $ unionFileModes group other
+
+symbolicChmod :: String -> FileMode -> FileMode
+symbolicChmod modeStr initMode = 
+    case runParser chMonad (([],Null,[]),initMode) "" modeStr of
+        (Left _) -> initMode
+        (Right mode) -> mode
+
+chMonad :: SymbolicChMonad
+chMonad = do 
+    many userParse 
+    actionParse 
+    modeParse
+    -- decide somethign
+
+userParse :: SymbolicChMonad
+userParse = do
+    ((user,action,mode),curMode) <- getState
+    ch <- oneOf "augo"
+    case ch of
+        'a' -> putState ((AllUser:user,action,mode),curMode)
+            >> return curMode
+        'u' -> putState ((User:user,action,mode),curMode)
+            >> return curMode
+        'g' -> putState ((Group:user,action,mode),curMode)
+            >> return curMode
+        'o' -> putState ((Other:user,action,mode),curMode)
+            >> return curMode
+        
+actionParse :: SymbolicChMonad
+actionParse = do
+    ((user,action,mode),curMode) <- getState
+    ch <- oneOf "-+="
+    case ch of
+        '-' -> putState ((user,Subtract,mode),curMode)
+            >> return curMode
+        '+' -> putState ((user,Add,mode),curMode)
+            >> return curMode
+        '=' -> putState ((user,Equals,mode),curMode)
+            >> return curMode
+
+modeParse :: SymbolicChMonad
+modeParse = undefined
