@@ -1,69 +1,45 @@
-{- Copyright (C) 2013 Grant Mather <hcaulfield57@gmail.com>
- -
- - Permission to use, copy, modify, and/or distribute this software for any
- - purpose with or without fee is hereby granted, provided that the above 
- - copyright notice and this permission notice appear in all copies.
- -
- - THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
- - WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
- - MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
- - ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
- - WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
- - ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
- - OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- -}
-
 module HCmd.Chmod where
 
-import Control.Exception
-import System.Exit
-import System.IO
 import System.Posix.Files
+import System.Posix.Types
 
-chmod :: FilePath -> String -> IO ()
-chmod file mode
-    | length mode /= 3 = usage "-m supports no more than three decimals"
-    | otherwise = do
-        let user = mode !! 0
-            group = mode !! 1
-            other = mode !! 2
-            usermode = case user of
-                '7' -> ownerModes
-                '6' -> unionFileModes ownerReadMode ownerWriteMode
-                '5' -> unionFileModes ownerReadMode ownerExecuteMode
-                '4' -> ownerReadMode
-                '3' -> unionFileModes ownerWriteMode ownerExecuteMode
-                '2' -> ownerWriteMode
-                '1' -> ownerExecuteMode
-                '0' -> nullFileMode
-            groupmode = case group of
-                '7' -> groupModes
-                '6' -> unionFileModes groupReadMode groupWriteMode
-                '5' -> unionFileModes groupReadMode groupExecuteMode
-                '4' -> groupReadMode
-                '3' -> unionFileModes groupWriteMode groupExecuteMode
-                '2' -> groupWriteMode
-                '1' -> groupExecuteMode
-                '0' -> nullFileMode
-            othermode = case other of
-                '7' -> otherModes
-                '6' -> unionFileModes otherReadMode otherWriteMode
-                '5' -> unionFileModes otherReadMode otherExecuteMode
-                '4' -> otherReadMode
-                '3' -> unionFileModes otherWriteMode otherExecuteMode
-                '2' -> otherWriteMode
-                '1' -> otherExecuteMode
-                '0' -> nullFileMode
-            filemode = unionFileModes usermode (unionFileModes 
-                groupmode othermode)
-        ret <- try (setFileMode file filemode) :: IO (Either IOError ())
-        case ret of
-            Right _ -> return ()
-            Left e -> hPutStrLn stderr (show e)
-                >> exitWith (ExitFailure 1)
-
-usage :: String -> IO ()
-usage s = do
-    hPutStrLn stderr s
-    hPutStrLn stderr "usage: mkdir [-p] [-m mode] dirname ..."
-    exitWith (ExitFailure 1)
+chmod :: String -> FileMode
+chmod (s:u:g:o:[]) =
+    let system = case s of
+          '0' -> nullFileMode
+          '1' -> nullFileMode -- TODO - Sticky Bit
+          '2' -> setGroupIDMode
+          '3' -> nullFileMode -- TODO - Sticky Bit
+          '4' -> setUserIDMode
+          '6' -> unionFileModes setGroupIDMode setUserIDMode
+          '7' -> unionFileModes setGroupIDMode setUserIDMode
+            -- TODO - Sticky Bit
+        user = case u of
+          '0' -> nullFileMode
+          '1' -> ownerExecuteMode
+          '2' -> ownerWriteMode
+          '3' -> unionFileModes ownerWriteMode ownerExecuteMode
+          '4' -> ownerReadMode
+          '5' -> unionFileModes ownerReadMode ownerExecuteMode
+          '6' -> unionFileModes ownerReadMode ownerWriteMode
+          '7' -> ownerModes
+        group = case g of
+          '0' -> nullFileMode
+          '1' -> groupExecuteMode
+          '2' -> groupWriteMode
+          '3' -> unionFileModes groupWriteMode groupExecuteMode
+          '4' -> groupReadMode
+          '5' -> unionFileModes groupReadMode groupExecuteMode
+          '6' -> unionFileModes groupReadMode groupWriteMode
+          '7' -> groupModes
+        other = case o of
+          '0' -> nullFileMode
+          '1' -> otherExecuteMode
+          '2' -> otherWriteMode
+          '3' -> unionFileModes otherWriteMode otherExecuteMode
+          '4' -> otherReadMode
+          '5' -> unionFileModes otherReadMode otherExecuteMode
+          '6' -> unionFileModes otherReadMode otherExecuteMode
+          '7' -> otherModes
+    in unionFileModes system . unionFileModes user 
+        $ unionFileModes group other
