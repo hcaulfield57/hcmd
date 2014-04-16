@@ -61,7 +61,7 @@ chmod (s:u:g:o:[]) =
 symbolicChmod :: String -> FileMode -> FileMode
 symbolicChmod modeStr initMode = 
     case runParser chMonad (([],Null,[]),initMode) "" modeStr of
-        (Left _) -> initMode
+        (Left _) -> chmod "0000"
         (Right mode) -> mode
 
 chMonad :: SymbolicChMonad
@@ -69,7 +69,8 @@ chMonad = do
     many userParse 
     actionParse 
     modeParse
-    -- decide somethign
+    ((user,action,mode),curMode) <- getState
+    return curMode
 
 userParse :: SymbolicChMonad
 userParse = do
@@ -98,4 +99,15 @@ actionParse = do
             >> return curMode
 
 modeParse :: SymbolicChMonad
-modeParse = undefined
+modeParse = do
+    ((user,action,mode),curMode) <- getState
+    ch <- oneOf "arwx"
+    case ch of
+        'a' -> putState ((user,action,AllMode:mode),curMode)
+            >> return curMode
+        'r' -> putState ((user,action,Read:mode),curMode)
+            >> return curMode
+        'w' -> putState ((user,action,Write:mode),curMode)
+            >> return curMode
+        'x' -> putState ((user,action,Execute:mode),curMode)
+            >> return curMode
