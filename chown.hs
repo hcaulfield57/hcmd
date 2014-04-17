@@ -25,23 +25,23 @@ chown uid gid fp = setOwnerAndGroup fp uid gid
 
 parseChown :: ParsecT String () IO ID
 parseChown =
-    owner <|>
-    ownerAndGroup <|>
-    group <|>
+    try group <|>
+    try ownerAndGroup <|>
+    try owner <|>
     chownFail
 
 owner :: ParsecT String () IO ID
 owner = do
-    user <- many (anyChar >> noneOf ":")
+    user <- many letter
     uid <- liftIO $ return . userID =<< getUserEntryForName user
     gid <- liftIO $ return . userGroupID =<< getUserEntryForName user
     return (uid,gid)
 
 ownerAndGroup :: ParsecT String () IO ID
 ownerAndGroup = do
-    user <- many (anyChar >> noneOf ":")
+    user <- many letter
     char ':'
-    group <- many anyChar
+    group <- many letter
     uid <- liftIO $ return . userID =<< getUserEntryForName user
     gid <- liftIO $ return . groupID =<< getGroupEntryForName group
     return (uid,gid)
@@ -49,7 +49,7 @@ ownerAndGroup = do
 group :: ParsecT String () IO ID
 group = do
     char ':'
-    group <- many anyChar
+    group <- many letter
     gid <- liftIO $ return . groupID =<< getGroupEntryForName group
     return ((-1),gid)
 

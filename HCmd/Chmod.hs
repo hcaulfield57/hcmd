@@ -70,6 +70,7 @@ chMonad = do
     modeParse
     ((user,action,mode),curMode) <- getState
     return $ case action of
+        _ -> undefined
     -- TODO
 
 userParse :: SymbolicChMonad

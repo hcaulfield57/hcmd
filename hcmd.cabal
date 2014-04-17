@@ -20,10 +20,10 @@ executable echo
     main-is: echo.hs
     build-depends: base
 
---executable mkdir
---    main-is: mkdir.hs
---    other-modules: HCmd.Chmod
---    build-depends: base, unix, directory
+executable mkdir
+    main-is: mkdir.hs
+    other-modules: HCmd.Chmod
+    build-depends: base, unix, directory, parsec
 
 executable mv
     main-is: mv.hs
