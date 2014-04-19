@@ -25,7 +25,7 @@ main = do
 mkdir :: [Flag] -> [String] -> IO ()
 mkdir _ [] = return ()
 mkdir flags (x:xs) = do
-    case any (== Parents) flags of
+    case elem Parents flags of
         True -> createDirectoryIfMissing True x
         False -> createDirectoryIfMissing False x
     let mode = getMode flags
@@ -36,7 +36,7 @@ mkdir flags (x:xs) = do
     
 getMode :: [Flag] -> String
 getMode [] = []
-getMode ((Mode m):ms)
+getMode (Mode m:ms)
     | length m == 4 = m
     | length m == 3 = '0' : m
 getMode (_:ms) = getMode ms
