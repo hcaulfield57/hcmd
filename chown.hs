@@ -27,8 +27,8 @@ parseChown :: ParsecT String () IO ID
 parseChown =
     try group <|>
     try ownerAndGroup <|>
-    try owner <|>
-    chownFail
+    try owner <?>
+    "Invalid Argument: "
 
 owner :: ParsecT String () IO ID
 owner = do
@@ -52,9 +52,3 @@ group = do
     group <- many letter
     gid <- liftIO $ return . groupID =<< getGroupEntryForName group
     return ((-1),gid)
-
-chownFail :: ParsecT String () IO ID
-chownFail = do
-    result <- many anyChar
-    liftIO $ putStrLn $ "Invalid Argument: " ++ result
-    liftIO $ exitWith (ExitFailure 1)
