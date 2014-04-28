@@ -22,9 +22,9 @@ main = do
         0 -> usage
         1 -> usage
         2 -> mv (head argv) (head . tail $ argv)
-        _ -> mapM_ (`mv` (last argv)) (init argv)
+        _ -> mapM_ (`mv` last argv) (init argv)
     where slash [] = []
-          slash (x:xs) = slash' x : slash xs
+          slash xs = map slash' xs
           slash' [] = []
           slash' (x:xs) = if x == '/' then slash' xs else x : slash' xs
 

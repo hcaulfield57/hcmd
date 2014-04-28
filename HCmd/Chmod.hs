@@ -1,8 +1,5 @@
 module HCmd.Chmod (chmod) where
 
-import qualified Control.Monad.State as S
-import Control.Monad.Reader
-import Data.Functor.Identity (Identity(..))
 import System.Posix.Files
 import System.Posix.Types
 import Text.Parsec.Prim (Parsec, putState)
@@ -73,54 +70,8 @@ chMonad = do
     modeParse
     ((user,action,mode),curMode) <- getState
     return $ case action of
-        Equals -> 
-            S.execState 
-                (runReaderT (eqMode user mode) (user,mode)) nullFileMode
-
-eqMode :: [User] -> [Mode] -> ReaderT ([User],[Mode]) (S.State FileMode) ()
-eqMode _ [] = return ()
-eqMode [] (m:ms) = do
-    (user,_) <- ask
-    eqMode user ms
-eqMode (u:us) (m:ms) = do
-    newMode <- S.get
-    case u of
-        AllUser -> case m of
-            AllMode -> S.put (unionFileModes (chmod "0777") newMode)
-                >> eqMode us (m:ms)
-            Read -> S.put (unionFileModes (chmod "0444") newMode)
-                >> eqMode us (m:ms)
-            Write -> S.put (unionFileModes (chmod "0222") newMode)
-                >> eqMode us (m:ms)
-            Execute -> S.put (unionFileModes (chmod "0111") newMode)
-                >> eqMode us (m:ms)
-        User -> case m of
-            AllMode -> S.put (unionFileModes (chmod "0700") newMode)
-                >> eqMode us (m:ms)
-            Read -> S.put (unionFileModes (chmod "0400") newMode)
-                >> eqMode us (m:ms)
-            Write -> S.put (unionFileModes (chmod "0200") newMode)
-                >> eqMode us (m:ms)
-            Execute -> S.put (unionFileModes (chmod "0100") newMode)
-                >> eqMode us (m:ms)
-        Group -> case m of
-            AllMode -> S.put (unionFileModes (chmod "0070") newMode)
-                >> eqMode us (m:ms)
-            Read -> S.put (unionFileModes (chmod "0040") newMode)
-                >> eqMode us (m:ms)
-            Write -> S.put (unionFileModes (chmod "0020") newMode)
-                >> eqMode us (m:ms)
-            Execute -> S.put (unionFileModes (chmod "0010") newMode)
-                >> eqMode us (m:ms)
-        Other -> case m of 
-            AllMode -> S.put (unionFileModes (chmod "0007") newMode)
-                >> eqMode us (m:ms)
-            Read -> S.put (unionFileModes (chmod "0004") newMode)
-                >> eqMode us (m:ms)
-            Write -> S.put (unionFileModes (chmod "0002") newMode)
-                >> eqMode us (m:ms)
-            Execute -> S.put (unionFileModes (chmod "0001") newMode)
-                >> eqMode us (m:ms)
+        _ -> undefined
+    -- TODO
 
 userParse :: SymbolicChMonad
 userParse = do

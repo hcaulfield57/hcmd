@@ -65,7 +65,7 @@ cp src dst = do
     when (Verbose `elem` opts) (liftIO $ verbose src dst')
 
 verbose :: String -> String -> IO ()
-verbose src dst = printf "cp: %s\t%s\n" src dst
+verbose = printf "cp: %s\t%s\n"
 
 main :: IO ()
 main = do
