@@ -1,15 +1,18 @@
-module Main where
-
 import System.Environment
 import System.IO
 
 cat :: Bool -> String -> IO ()
-cat False file = readFile file >>= putStr
-cat True _ = getContents >>= putStr
+cat True _ = do
+    buf <- hGetContents stdin
+    hPutStr stdout buf
+cat False file = do
+    han <- openFile file ReadMode
+    buf <- hGetContents han
+    hPutStr stdout buf
 
 main :: IO ()
 main = do
     argv <- getArgs
-    if null argv -- stdin
-        then cat True []
-        else mapM_ (cat False) argv
+    case length argv of
+        0 -> cat True ""
+        _ -> mapM_ (cat False) argv
